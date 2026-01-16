@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>RTC App</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <h2>Local Audio Stream Active</h2>
+    <video id="localVideo" autoplay muted></video>
+
+    <div id="controls">
+        <button id="muteBtn">Mute</button>
+        <button id="leaveBtn">Leave Call</button>
+    </div>
+
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/media.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        document.getElementById("muteBtn").addEventListener("click", toggleMute);
+    </script>
+    <script>
+        document.getElementById("leaveBtn").addEventListener("click", leaveCall);
+    </script>
+
+
+</body>
+
+</html>

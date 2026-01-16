@@ -71,3 +71,16 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
   console.log(`Signaling server running on port ${PORT}`);
 });
+
+// function leaveCall() {
+//     if (peerConnection) {
+//         peerConnection.close();
+//     }
+
+//     if (localStream) {
+//         localStream.getTracks().forEach(track => track.stop());
+//     }
+
+//     socket.disconnect();
+//     alert("You left the call");
+// }
