@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>RTC App</title>
@@ -9,27 +8,23 @@
 
 <body>
 
-    <h2>Local Audio Stream Active</h2>
-    <video id="localVideo" autoplay muted></video>
+    <h2 id="callStatus">Idle. Click Join to start.</h2>
+
+    <!-- Local video (used only if camera exists) -->
+    <video id="localVideo" autoplay muted playsinline></video>
 
     <div id="controls">
+        <button id="joinBtn">Join Call</button>
         <button id="muteBtn">Mute</button>
         <button id="leaveBtn">Leave Call</button>
     </div>
 
-
+    <!-- Socket.io -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <!-- App scripts -->
     <script src="js/media.js"></script>
     <script src="js/app.js"></script>
-    
-    <script>
-        document.getElementById("muteBtn").addEventListener("click", toggleMute);
-    </script>
-    <script>
-        document.getElementById("leaveBtn").addEventListener("click", leaveCall);
-    </script>
-
 
 </body>
-
 </html>

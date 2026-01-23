@@ -3,10 +3,10 @@
 
 require("dotenv").config();
 
-const express = require("express");           // Express for HTTP server
-const http = require("http");                 // Node HTTP module, required for socket.io
-const { Server } = require("socket.io");      // Socket.io for real-time signaling
-const cors = require("cors");                 // CORS so frontend can connect
+const express = require("express"); // Express for HTTP server
+const http = require("http"); // Node HTTP module, required for socket.io
+const { Server } = require("socket.io"); // Socket.io for real-time signaling
+const cors = require("cors"); // CORS so frontend can connect
 
 const app = express();
 
@@ -20,30 +20,43 @@ const server = http.createServer(app);
 // Initialize Socket.io server
 const io = new Server(server, {
   cors: {
-    origin: "*",             // Allow all origins (Netlify frontend)
-    methods: ["GET", "POST"]
-  }
+    origin: "*", // Allow all origins (Netlify frontend)
+    methods: ["GET", "POST"],
+  },
 });
 
 // Port for our backend server
 const PORT = process.env.PORT || 5000;
-  
+
 // Listen to socket connections
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   // Event: user joins a room
   socket.on("join-room", (roomId) => {
-    
-    socket.join(roomId); // Join socket.io room
+    socket.join(roomId); // Join the specified room
+    socket.roomId = roomId;
+
+    console.log(`User joined room: ${socket.id} ${roomId}`);
+
     const clients = io.sockets.adapter.rooms.get(roomId);
     const numClients = clients ? clients.size : 0;
-    console.log(`Room ${roomId} has ${numClients} client(s)`);
 
     // Notify existing clients that a new user joined
     if (numClients > 1) {
       socket.to(roomId).emit("user-joined", socket.id);
     }
+  });
+
+  socket.on("leave-room", (roomId) => {
+    socket.leave(roomId);
+    socket.to(roomId).emit("user-left", socket.id);
+
+    if (socket.roomId === roomId) {
+      socket.roomId = null;
+    }
+
+    console.log("User left room:", socket.id, roomId);
   });
 
   // Relay WebRTC offer to other peer in room
@@ -63,6 +76,9 @@ io.on("connection", (socket) => {
 
   // Handle user disconnect
   socket.on("disconnect", () => {
+    if (socket.roomId) {
+      socket.to(socket.roomId).emit("user-left", socket.id);
+    }
     console.log("User disconnected:", socket.id);
   });
 });
@@ -71,16 +87,3 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
   console.log(`Signaling server running on port ${PORT}`);
 });
-
-// function leaveCall() {
-//     if (peerConnection) {
-//         peerConnection.close();
-//     }
-
-//     if (localStream) {
-//         localStream.getTracks().forEach(track => track.stop());
-//     }
-
-//     socket.disconnect();
-//     alert("You left the call");
-// }

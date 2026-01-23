@@ -1,29 +1,38 @@
 // app.js
 // One to one WebRTC audio call using Socket.io signaling
 
+let callState = "idle";
+// idle | joining | in-call
+
 const socket = io("http://localhost:5000");
 const ROOM_ID = "test-room";
 
 let peerConnection = null;
 
 const rtcConfig = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
 
 // Start media first, then join room
-window.addEventListener("load", async () => {
-  await startLocalMedia();
-  socket.emit("join-room", ROOM_ID);
-});
+// window.addEventListener("load", async () => {
+//   if (callState !== "idle") return;
+
+//   callState = "joining";
+//   await startLocalMedia();
+//   socket.emit("join-room", ROOM_ID);
+// });
 
 // When second user joins, first user creates offer
 socket.on("user-joined", async () => {
   createPeerConnection();
 
+  callState = "in-call";
+  console.log("State:", callState);
+updateUIState();
+
+
   // Add local audio tracks
-  localStream.getTracks().forEach(track => {
+  localStream.getTracks().forEach((track) => {
     peerConnection.addTrack(track, localStream);
   });
 
@@ -32,7 +41,7 @@ socket.on("user-joined", async () => {
 
   socket.emit("webrtc-offer", {
     roomId: ROOM_ID,
-    offer
+    offer,
   });
 });
 
@@ -40,7 +49,12 @@ socket.on("user-joined", async () => {
 socket.on("webrtc-offer", async (offer) => {
   createPeerConnection();
 
-  localStream.getTracks().forEach(track => {
+  callState = "in-call";
+  console.log("State:", callState);
+updateUIState();
+
+
+  localStream.getTracks().forEach((track) => {
     peerConnection.addTrack(track, localStream);
   });
 
@@ -51,8 +65,14 @@ socket.on("webrtc-offer", async (offer) => {
 
   socket.emit("webrtc-answer", {
     roomId: ROOM_ID,
-    answer
+    answer,
   });
+});
+
+// Handle remote user leaving
+socket.on("user-left", (socketId) => {
+  console.log("Remote user left:", socketId);
+  handleRemoteLeave();
 });
 
 // First user receives answer
@@ -74,7 +94,7 @@ function createPeerConnection() {
     if (event.candidate) {
       socket.emit("webrtc-ice-candidate", {
         roomId: ROOM_ID,
-        candidate: event.candidate
+        candidate: event.candidate,
       });
     }
   };
@@ -87,3 +107,60 @@ function createPeerConnection() {
     document.body.appendChild(remoteAudio);
   };
 }
+
+function handleRemoteLeave() {
+  console.log("Remote user left");
+
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+
+  callState = "idle";
+  console.log("State:", callState);
+updateUIState();
+
+
+  document.querySelectorAll("audio, video").forEach((el) => {
+    el.srcObject = null;
+    el.remove();
+  });
+
+  const statusEl = document.getElementById("status");
+  if (statusEl) {
+    statusEl.innerText = "Waiting for another user...";
+  }
+}
+
+async function startCall() {
+  if (callState !== "idle") {
+    console.log("Call already active or joining");
+    return;
+  }
+
+  callState = "joining";
+  console.log("Starting call");
+updateUIState();
+
+  await startLocalMedia();
+  socket.emit("join-room", ROOM_ID);
+}
+
+document.getElementById("joinBtn").onclick = startCall;
+document.getElementById("leaveBtn").onclick = leaveCall;
+
+function updateUIState() {
+  const status = document.getElementById("callStatus");
+
+  if (!status) return;
+
+  if (callState === "idle") {
+    status.innerText = "Idle. Click Join to start.";
+  } else if (callState === "joining") {
+    status.innerText = "Waiting for another user...";
+  } else if (callState === "in-call") {
+    status.innerText = "In call";
+  }
+}
+
+updateUIState();
